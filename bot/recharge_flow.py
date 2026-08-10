@@ -13,6 +13,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.filters import StateFilter, Command
+from pathlib import Path
 
 # Import the fixed functions
 from .oxapay import create_invoice, check_invoice
@@ -21,7 +22,7 @@ from .oxapay import create_invoice, check_invoice
 USDT_TO_INR = 90
 MIN_USDT = 0.1
 UPI_ID = "yudo@slc"
-QR_PATH = "QR.jpg"
+QR_PATH = Path(__file__).resolve().parent.parent / "Qr.jpg"
 
 class RechargeState(StatesGroup):
     choose_method = State()
