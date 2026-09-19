@@ -65,7 +65,7 @@ USAGE = "Sexypremiums"
 OWNER = "Sexypremiums"
 UPDATES= "mafiaXupdates"
 CHANNEL="Aresxcores"
-SALESLOG = "lustybanner" 
+SALESLOG = "-1004323431388" 
 ADMINLOG = "-1004378945314"
 LOGS = SALESLOG
 ADMINLOGS = ADMINLOG
@@ -600,12 +600,12 @@ async def more_menu(cq: CallbackQuery):
                 InlineKeyboardButton(text="Sales Log", url=f"https://t.me/{SALESLOG}",icon_custom_emoji_id="6129801569941592173", style="success")
             ],
             [
-                InlineKeyboardButton(text="How to Buy", url=f"https://t.me/{USAGE}",icon_custom_emoji_id="5377537549831005036", style="success"),
-                InlineKeyboardButton(text="How to Sell", url=f"https://t.me/{USAGE}",icon_custom_emoji_id="5377537549831005036", style="success")
+                InlineKeyboardButton(text="How to Buy", url=f"https://t.me/mafiaxsupports",icon_custom_emoji_id="5377537549831005036", style="success"),
+                InlineKeyboardButton(text="How to Sell", url=f"https://t.me/mafiaxsupports",icon_custom_emoji_id="5377537549831005036", style="success")
             ],
             [
-                InlineKeyboardButton(text="How to Recharge", url=f"https://t.me/{USAGE}",icon_custom_emoji_id="5377537549831005036", style="success"),
-                InlineKeyboardButton(text="Support", url=f"https://t.me/{SUPPORT}",icon_custom_emoji_id="5238025132177369293", style="success")
+                InlineKeyboardButton(text="How to Recharge", url=f"https://t.me/mafiaxsupports",icon_custom_emoji_id="5377537549831005036", style="success"),
+                InlineKeyboardButton(text="Support", url=f"https://t.me/mafiaxsupports",icon_custom_emoji_id="5238025132177369293", style="success")
             ],
             [
                 InlineKeyboardButton(text="Back", callback_data="back_main",icon_custom_emoji_id="5409284148491726576", style="danger")
