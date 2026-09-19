@@ -3,13 +3,13 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from config import MUST_JOIN_CHANNEL
 
 # Private channel details
-PRIVATE_CHANNEL_ID =  -1004217309976
-PRIVATE_CHANNEL_LINK = "https://t.me/rush_networks"
-PRIVATE_CHANNEL_ID2 =  -1004217309976
+PRIVATE_CHANNEL_ID =  -1003945970070
+PRIVATE_CHANNEL_LINK = "https://t.me/Aresxcores"
+PRIVATE_CHANNEL_ID2 =  -1003784042137
 
 BOTUSER = "neuidbot"
 # Welcome text with HTML formatting
-WELCOME_TEXT = ("❌ 𝖸𝗈𝗎 𝗆𝗎𝗌𝗍 𝗌𝗎𝖻𝗌𝖼𝗋𝗂𝖻𝖾 𝗍𝗈 𝗍𝗁𝖾 𝗈𝖿𝖿𝗂𝖼𝗂𝖺𝗅 𝖻𝗈𝗍 𝖼𝗁𝖺𝗇𝗇𝖾𝗅 𝗍𝗈 𝗎𝗌𝖾 𝗍𝗁𝖾 𝖻𝗈𝗍...\n\n<blockquote>- <b>𝖢𝗁𝖺𝗇𝗇𝖾𝗅</b> - @neumrkt</blockquote>\n\n<b>• Press Verify Button below to check</b>")
+WELCOME_TEXT = ("❌ 𝖸𝗈𝗎 𝗆𝗎𝗌𝗍 𝗌𝗎𝖻𝗌𝖼𝗋𝗂𝖻𝖾 𝗍𝗈 𝗍𝗁𝖾 𝗈𝖿𝖿𝗂𝖼𝗂𝖺𝗅 𝖻𝗈𝗍 𝖼𝗁𝖺𝗇𝗇𝖾𝗅 𝗍𝗈 𝗎𝗌𝖾 𝗍𝗁𝖾 𝖻𝗈𝗍...\n\n<blockquote>- <b>𝖢𝗁𝖺𝗇𝗇𝖾𝗅</b> - @Aresxcores</blockquote>\n\n<b>• Press Verify Button below to check</b>")
 
 
 
@@ -44,8 +44,8 @@ async def send_join_message(message: types.Message):
 
     # First row: both channels
     kb.row(
-        types.InlineKeyboardButton(text="📢 Network", url=f"https://t.me/rush_networks"),
-        types.InlineKeyboardButton(text="💌 logs ", url="https://t.me/coderush_official")
+        types.InlineKeyboardButton(text="📢 Network", url=f"https://t.me/aresxcores"),
+        types.InlineKeyboardButton(text="💌 updates ", url="https://t.me/mafiaxupdates")
     )
     kb.row(
          types.InlineKeyboardButton(text="Verify Join ☑️", callback_data="back_main")

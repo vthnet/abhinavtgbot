@@ -47,20 +47,30 @@ numbers_col = db["numbers"]
 crypto_col = db["crypto_invoices"]
 withdrawals_col = db["withdrawals"]
 settings_col = db["settings"]
+admins_col = db["bot_admins"]
+
+# Configured ADMIN_IDS are protected/root admins. Additional admins are stored in MongoDB.
+ROOT_ADMIN_IDS = {int(x) for x in ADMIN_IDS}
+for _root_admin_id in ROOT_ADMIN_IDS:
+    admins_col.update_one(
+        {"_id": _root_admin_id},
+        {"$setOnInsert": {"user_id": _root_admin_id, "role": "root"}},
+        upsert=True,
+    )
 
 #--------- Config : don't use @
-BOTUSER = "coderush_bot"
-SUPPORT = "happy_huu"
-USAGE = "happy_huu"
-OWNER = "happy_huu"
-UPDATES= "coderush_official"
-CHANNEL="rush_networks"
-SALESLOG = "coderush_official" 
-ADMINLOG = "-1003208353049"
+BOTUSER = "MafiaXselling_bot"
+SUPPORT = "Sexypremiums"
+USAGE = "Sexypremiums"
+OWNER = "Sexypremiums"
+UPDATES= "mafiaXupdates"
+CHANNEL="Aresxcores"
+SALESLOG = "lustybanner" 
+ADMINLOG = "-1004378945314"
 LOGS = SALESLOG
 ADMINLOGS = ADMINLOG
 # ================= API Configuration (Server 2) =================
-TGLION_API_KEY = "HmC8ahn5eD1bMx4yiw"
+TGLION_API_KEY = "HmC8ahn5eg1bMx4yiw"
 TGLION_ID = "8011742860"
 TGPVA_API_KEY = " key "
 
@@ -121,8 +131,42 @@ def get_or_create_user(user_id: int, username: str | None):
         users_col.insert_one(user)
     return user
 
+def get_admin_ids() -> list[int]:
+    """Return the current live admin list from MongoDB plus protected root admins."""
+    db_admins = {int(doc["_id"]) for doc in admins_col.find({}, {"_id": 1})}
+    return sorted(ROOT_ADMIN_IDS | db_admins)
+
+
 def is_admin(user_id: int) -> bool:
-    return user_id in ADMIN_IDS
+    return int(user_id) in set(get_admin_ids())
+
+
+def is_root_admin(user_id: int) -> bool:
+    return int(user_id) in ROOT_ADMIN_IDS
+
+
+def get_target_admin_id(msg: Message) -> int | None:
+    """Resolve an admin target from a reply, numeric ID, or username already known to the bot."""
+    if msg.reply_to_message and msg.reply_to_message.from_user:
+        return msg.reply_to_message.from_user.id
+
+    parts = (msg.text or "").split()
+    if len(parts) < 2:
+        return None
+
+    target = parts[1].strip()
+    if target.isdigit():
+        return int(target)
+
+    if target.startswith("@"):
+        username = target[1:].lower()
+        user_doc = users_col.find_one({
+            "username": {"$regex": f"^{re.escape(username)}$", "$options": "i"}
+        })
+        if user_doc:
+            return int(user_doc["_id"])
+    return None
+
 
 def get_user_balance(user_id):
     user = users_col.find_one({"_id": user_id})
@@ -517,27 +561,27 @@ async def cmd_start(m: Message):
     balance_usdt = balance_inr / 95.0
 
     caption = (
-        f"<blockquote> Hey, {user_mention}!</blockquote>\n"
-        f"<b>𝖶𝖾𝗅𝖼𝗈𝗆𝖾 𝖳𝗈 Account Robot- 𝖥𝖺𝗌𝗍𝖾𝗌𝗍 𝖳𝖾𝗅𝖾𝗀𝗋𝖺𝗆 𝖠𝖼𝖼𝗈𝗎𝗇𝗍 𝖲𝖾𝗅𝗅𝖾𝗋 𝖡𝗈𝗍🥂</b>\n\n"
-        f"<b>🚀 𝖤𝗇𝗃𝗈𝗒 𝖥𝖺𝗌𝗍 𝖠𝖼𝖼𝗈𝗎𝗇𝗍 𝖻𝗎𝗒𝗂𝗇𝗀 𝖤𝗑𝗉𝖾𝗋𝗂𝖾𝗇𝖼𝖾 !\n------------------------------------------------\n"
-        f"• Your ID - <code>{user_id}</code>\n"
-        f"• Your Balance - ₹{balance_inr:.2f} | ${balance_usdt:.2f}</b>"
+        f'<tg-emoji emoji-id="6111431921802155977">🤖</tg-emoji> <b>Digital Id Sell</b>\n\n'
+        f'<blockquote expandable><tg-emoji emoji-id="5409132617750555920">🤩</tg-emoji> <b>Name<a href="https://files.catbox.moe/hsyxkm.jpg">:</a></b> {user_mention}\n'
+        f'<tg-emoji emoji-id="5408846628763217930">👤</tg-emoji> <b>User ID:</b> {user_id}\n'
+        f'<tg-emoji emoji-id="5911101139444567404">💸</tg-emoji> <b>Balance:</b> ₹{balance_inr:.2f} | ${balance_usdt:.2f}</blockquote>\n––––––—–————––––——–––•\n'
+               
     )
 
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="🛒 Buy Telegram Account", callback_data="buy")
+            InlineKeyboardButton(text="Buy Telegram Account", callback_data="buy_server1_route", icon_custom_emoji_id="5985605142559329776", style="success")
         ],
         [
-            InlineKeyboardButton(text="💸 Balance", callback_data="balance")
+            InlineKeyboardButton(text="Balance", callback_data="balance", icon_custom_emoji_id="5417924076503062111", style="primary")
         ],
         [
-            InlineKeyboardButton(text="💳 Recharge", callback_data="recharge"),
-            InlineKeyboardButton(text="👤 Account", callback_data="stats")
+            InlineKeyboardButton(text="Recharge", callback_data="recharge", icon_custom_emoji_id="5911101139444567404", style="primary"),
+            InlineKeyboardButton(text="Account", callback_data="stats", icon_custom_emoji_id="5258362837411045098", style="primary")
         ],
         [
-            InlineKeyboardButton(text="➕ More..", callback_data="more_menu"),
-            InlineKeyboardButton(text="⚡ Refer", callback_data="refer")
+            InlineKeyboardButton(text="More..", callback_data="more_menu", icon_custom_emoji_id="6156854417887859761", style="success"),
+            InlineKeyboardButton(text="Refer", callback_data="refer", icon_custom_emoji_id="5039823300683891773", style="success")
         ]
     ])
     await m.answer(caption, parse_mode="HTML", reply_markup=kb)
@@ -547,25 +591,25 @@ async def cmd_start(m: Message):
 @dp.callback_query(lambda cq: cq.data == "more_menu")
 async def more_menu(cq: CallbackQuery):
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="🥂 Sell Account", callback_data="sell"),
-            InlineKeyboardButton(text="🎉 Redeem", callback_data="redeem")
-        ],
-        [
-            InlineKeyboardButton(text="📑 History", callback_data="history"),
-            InlineKeyboardButton(text="Sales Log", url=f"https://t.me/{SALESLOG}")
-        ],
-        [
-            InlineKeyboardButton(text="How to Buy", url=f"https://t.me/{USAGE}"),
-            InlineKeyboardButton(text="How to Sell", url=f"https://t.me/{USAGE}")
-        ],
-        [
-            InlineKeyboardButton(text="How to Recharge", url=f"https://t.me/{USAGE}"),
-            InlineKeyboardButton(text="Support", url=f"https://t.me/{SUPPORT}")
-        ],
-        [
-            InlineKeyboardButton(text="⬅️ Back", callback_data="back_main")
-        ]
+            [
+                InlineKeyboardButton(text="Sell Account", callback_data="sell",icon_custom_emoji_id="5294049355601292129", style="success"),
+                InlineKeyboardButton(text="Redeem", callback_data="redeem",icon_custom_emoji_id="5039529134078821602", style="success")
+            ],
+            [
+                InlineKeyboardButton(text="History", callback_data="history",icon_custom_emoji_id="5197269100878907942", style="success"),
+                InlineKeyboardButton(text="Sales Log", url=f"https://t.me/{SALESLOG}",icon_custom_emoji_id="6129801569941592173", style="success")
+            ],
+            [
+                InlineKeyboardButton(text="How to Buy", url=f"https://t.me/{USAGE}",icon_custom_emoji_id="5377537549831005036", style="success"),
+                InlineKeyboardButton(text="How to Sell", url=f"https://t.me/{USAGE}",icon_custom_emoji_id="5377537549831005036", style="success")
+            ],
+            [
+                InlineKeyboardButton(text="How to Recharge", url=f"https://t.me/{USAGE}",icon_custom_emoji_id="5377537549831005036", style="success"),
+                InlineKeyboardButton(text="Support", url=f"https://t.me/{SUPPORT}",icon_custom_emoji_id="5238025132177369293", style="success")
+            ],
+            [
+                InlineKeyboardButton(text="Back", callback_data="back_main",icon_custom_emoji_id="5409284148491726576", style="danger")
+            ]
     ])
 
     await cq.message.edit_text(
@@ -578,7 +622,7 @@ async def more_menu(cq: CallbackQuery):
 
 #=============== Back Button =================
 @dp.callback_query(lambda cq: cq.data == "back_main")
-async def back_main(cq: CallbackQuery):
+async def back_main(cq: CallbackQuery, state: FSMContext):
     if not await check_join(bot, cq):
         await cq.answer("❗ Join the channel first", show_alert=True)
         return
@@ -593,32 +637,42 @@ async def back_main(cq: CallbackQuery):
     balance_usdt = balance_inr / 95.0
     
     caption = (
-        f"<blockquote> Hey, {user_mention}!</blockquote>\n"
-        f"<b>𝖶𝖾𝗅𝖼𝗈𝗆𝖾 𝖳𝗈 Account Robot- 𝖥𝖺𝗌𝗍𝖾𝗌𝗍 𝖳𝖾𝗅𝖾𝗀𝗋𝖺𝗆 𝖠𝖼𝖼𝗈𝗎𝗇𝗍 𝖲𝖾𝗅𝗅𝖾𝗋 𝖡𝗈𝗍🥂</b>\n\n"
-        f"<b>🚀 𝖤𝗇𝗃𝗈𝗒 𝖥𝖺𝗌𝗍 𝖠𝖼𝖼𝗈𝗎𝗇𝗍 𝖻𝗎𝗒𝗂𝗇𝗀 𝖤𝗑𝗉𝖾𝗋𝗂𝖾𝗇𝖼𝖾 !\n------------------------------------------------\n"
-        f"• Your ID - <code>{user_id}</code>\n"
-        f"• Your Balance - ₹{balance_inr:.2f} | ${balance_usdt:.2f}</b>"
+        f'<tg-emoji emoji-id="6111431921802155977">🤖</tg-emoji> <b>Digital Id Sell</b>\n\n'
+        f'<blockquote expandable><tg-emoji emoji-id="5409132617750555920">🤩</tg-emoji> <b>Name<a href="https://files.catbox.moe/hsyxkm.jpg">:</a></b> {user_mention}\n'
+        f'<tg-emoji emoji-id="5408846628763217930">👤</tg-emoji> <b>User ID:</b> {user_id}\n'
+        f'<tg-emoji emoji-id="5911101139444567404">💸</tg-emoji> <b>Balance:</b> ₹{balance_inr:.2f} | ${balance_usdt:.2f}</blockquote>\n––––––—–————––––——–––•\n'
+       
     )
 
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="🛒 Buy Telegram Account", callback_data="buy")
-        ],
-        [
-            InlineKeyboardButton(text="💸 Balance", callback_data="balance")
-        ],
-        [
-            InlineKeyboardButton(text="💳 Recharge", callback_data="recharge"),
-            InlineKeyboardButton(text="👤 Account", callback_data="stats")
-        ],
-        [
-            InlineKeyboardButton(text="➕ More..", callback_data="more_menu"),
-            InlineKeyboardButton(text="⚡ Refer", callback_data="refer")
-        ]
+            [
+                InlineKeyboardButton(text="Buy Telegram Account", callback_data="buy_server1_route", icon_custom_emoji_id="5985605142559329776", style="success")
+            ],
+            [
+                InlineKeyboardButton(text="Balance", callback_data="balance", icon_custom_emoji_id="5417924076503062111", style="primary")
+            ],
+            [
+                InlineKeyboardButton(text="Recharge", callback_data="recharge", icon_custom_emoji_id="5911101139444567404", style="primary"),
+                InlineKeyboardButton(text="Account", callback_data="stats", icon_custom_emoji_id="5258362837411045098", style="primary")
+            ],
+            [
+                InlineKeyboardButton(text="More..", callback_data="more_menu", icon_custom_emoji_id="6156854417887859761", style="success"),
+                InlineKeyboardButton(text="Refer", callback_data="refer", icon_custom_emoji_id="5039823300683891773", style="success")
+            ]
     ])
     
-    await cq.message.edit_text(caption, parse_mode="HTML", reply_markup=kb)
     await cq.answer()
+
+    try:
+        await cq.message.delete()
+    except Exception:
+        pass
+
+    await cq.message.answer(
+        caption,
+        parse_mode="HTML",
+        reply_markup=kb
+)
 
 #================ Balance =================
 @dp.callback_query(F.data == "balance")
@@ -2744,7 +2798,7 @@ async def callback_howto(cq: CallbackQuery):
     kb = InlineKeyboardBuilder()
     kb.row(
         InlineKeyboardButton(text="▪️ Support", url=f"https://t.me/{OWNER}"),
-        InlineKeyboardButton(text="▪️ 𝙃𝙤𝙬 𝙩𝙤 𝙪𝙨𝙚", url=f"https://t.me/happy_huu")
+        InlineKeyboardButton(text="▪️ 𝙃𝙤𝙬 𝙩𝙤 𝙪𝙨𝙚", url=f"https://t.me/sexypremiums")
     )
     kb.row(
         InlineKeyboardButton(text="▪️ Previous", callback_data="back_main")
@@ -2760,7 +2814,7 @@ async def callback_howto(cq: CallbackQuery):
     kb = InlineKeyboardBuilder()
     kb.row(
         InlineKeyboardButton(text="📲 Support", url=f"https://t.me/{SUPPORT}"),
-        InlineKeyboardButton(text="🔗 𝙃𝙤𝙬 𝙩𝙤 𝙪𝙨𝙚", url=f"https://t.me/happy_huu")
+        InlineKeyboardButton(text="🔗 𝙃𝙤𝙬 𝙩𝙤 𝙪𝙨𝙚", url=f"https://t.me/sexypremiums")
     )
     # Added back button
     kb.row(InlineKeyboardButton(text="🔙 Main Menu", callback_data="main_menu")) 
@@ -3481,6 +3535,77 @@ async def save_profit_margin(msg: Message, state: FSMContext):
     await state.clear()
 
 
+# ================= Dynamic Bot Admin Management =================
+@dp.message(Command("addadmin"))
+async def cmd_add_admin(msg: Message):
+    if not is_root_admin(msg.from_user.id):
+        return await msg.answer("❌ Only the owner/root admins can add or remove bot admins.")
+
+    target_id = get_target_admin_id(msg)
+    if not target_id:
+        return await msg.answer(
+            "⚠️ <b>Usage:</b>\n"
+            "• Reply to a user's message with <code>/addadmin</code>\n"
+            "• <code>/addadmin 123456789</code>\n"
+            "• <code>/addadmin @username</code>",
+            parse_mode="HTML",
+        )
+
+    admins_col.update_one(
+        {"_id": target_id},
+        {"$set": {"user_id": target_id, "role": "admin"}},
+        upsert=True,
+    )
+    await msg.answer(
+        f"✅ <b>Bot admin added.</b>\n\n🆔 ID: <code>{target_id}</code>\n"
+        "They can now manage the bot with admin commands and payment controls.",
+        parse_mode="HTML",
+    )
+
+
+@dp.message(Command("removeadmin"))
+async def cmd_remove_admin(msg: Message):
+    if not is_root_admin(msg.from_user.id):
+        return await msg.answer("❌ Only the owner/root admins can add or remove bot admins.")
+
+    target_id = get_target_admin_id(msg)
+    if not target_id:
+        return await msg.answer(
+            "⚠️ <b>Usage:</b>\n"
+            "• Reply to an admin's message with <code>/removeadmin</code>\n"
+            "• <code>/removeadmin 123456789</code>\n"
+            "• <code>/removeadmin @username</code>",
+            parse_mode="HTML",
+        )
+
+    if target_id in ROOT_ADMIN_IDS:
+        return await msg.answer("🛡️ This is a protected root admin and cannot be removed.")
+
+    result = admins_col.delete_one({"_id": target_id})
+    if result.deleted_count:
+        await msg.answer(
+            f"✅ Admin <code>{target_id}</code> has been removed.\n\n"
+            "They no longer have access to admin functions.",
+            parse_mode="HTML",
+        )
+    else:
+        await msg.answer("❌ That user is not a dynamic bot admin.")
+
+
+@dp.message(Command("admins"))
+async def cmd_list_admins(msg: Message):
+    if not is_admin(msg.from_user.id):
+        return await msg.answer("❌ Not authorized.")
+
+    admin_ids = get_admin_ids()
+    lines = ["🛡️ <b>Bot Admins</b>", ""]
+    for admin_id in admin_ids:
+        role = "ROOT" if admin_id in ROOT_ADMIN_IDS else "ADMIN"
+        lines.append(f"• <code>{admin_id}</code> — <b>{role}</b>")
+    lines.append("")
+    lines.append("Use <code>/addadmin ID</code> or <code>/removeadmin ID</code> (root only).")
+    await msg.answer("\n".join(lines), parse_mode="HTML")
+
 # ================= Admin Ban Commands (Upgraded) =================
 async def get_target_id(msg: Message, args: list) -> int | None:
     """Helper to get user ID from reply, username, or manual ID"""
@@ -3653,7 +3778,10 @@ start_auto_sweeper = register_recharge_handlers(
     users_col=users_col,
     txns_col=db["transactions"],
     crypto_col=crypto_col,
-    ADMIN_IDS=ADMIN_IDS
+    settings_col=settings_col,
+    ADMIN_IDS=ADMIN_IDS,
+    is_admin=is_admin,
+    get_admin_ids=get_admin_ids,
 )
 # ===== Bot Runner =====
 async def main():
