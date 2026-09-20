@@ -2928,7 +2928,6 @@ async def cmd_sales(msg: Message):
         f"⚖️ Avg Price/Number: ₹{avg_price:.2f}\n"
         f"🌍 Top Country: {top_country}\n"
         f"💳 Total Recharge: ₹{total_recharge:.2f}\n\n"
-        f"@quickcodes_bot •|• @valriks"
     )
 
     await msg.answer(report, parse_mode="HTML")
