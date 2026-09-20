@@ -1454,7 +1454,7 @@ async def send_country_menu(cq: CallbackQuery, page: int = 0):
     # Return to main menu
     kb.row(InlineKeyboardButton(text="▪️Home", callback_data="back_main"))
 
-    text = f"<b><u>Buy SpamFree Telegram accounts:</u></b>\n––––––––––––––————––•\n◍ <u><b>Total balance:</b></u> {balance}  \n<u>◍ Server:</u> Server (1)\n◍ <b>Page </b>{page+1} of {(total - 1)//COUNTRIES_PER_PAGE + 1}\n✅ <a href=\"https://t.me/{LOGS}\">Sucessful Purchases</a>\n➖➖➖➖➖➖➖➖➖➖➖"
+    text = f"<b><u>Buy SpamFree Telegram accounts:</u></b>\n––––––––––––––————––•\n◍ <u><b>Total balance:</b></u> {balance}  \n<u>◍ Server:</u> Server (1)\n◍ <b>Page </b>{page+1} of {(total - 1)//COUNTRIES_PER_PAGE + 1}\n✅ <a href=\"https://t.me/lustybanner\">Sucessful Purchases</a>\n➖➖➖➖➖➖➖➖➖➖➖"
     await cq.message.edit_text(text, reply_markup=kb.as_markup(),parse_mode="HTML", disable_web_page_preview=True)
 
 
@@ -2111,32 +2111,109 @@ async def handle_set_prices(msg: Message, state: FSMContext):
 @dp.callback_query(F.data == "sell")
 async def callback_sell(cq: CallbackQuery, state: FSMContext):
     await cq.answer()
+
     prices = list(sell_prices_col.find({}))
-    
+
     if not prices:
-        return await cq.message.answer("❌ <b>Sales are currently closed.</b>\nNo price list available.")
+        return await cq.message.answer(
+            "❌ <b>Sales are currently closed.</b>\n"
+            "No price list available.",
+            parse_mode="HTML"
+        )
 
-    # High UI Price List
-    price_list_text = ""
+    # ---------------------------------------------------------
+    # Build rate lines
+    # ---------------------------------------------------------
+    rate_lines = []
+
     for p in prices:
-        price_list_text += f"🏳️ <code>{p['code']}</code> <b>{p['name']}</b> ➜ ₹{p['price']}\n"
+        rate_lines.append(
+            f"🏳️ <code>{p['code']}</code> "
+            f"<b>{p['name']}</b> ➜ ₹{p['price']}"
+        )
 
-    text = (
+    # ---------------------------------------------------------
+    # Telegram message limit protection
+    # Keep each rate message comfortably below 4096 chars.
+    # ---------------------------------------------------------
+    chunks = []
+    current_chunk = ""
+    MAX_CHUNK_SIZE = 3200
+
+    for line in rate_lines:
+        line_with_newline = line + "\n"
+
+        if len(current_chunk) + len(line_with_newline) > MAX_CHUNK_SIZE:
+            if current_chunk:
+                chunks.append(current_chunk)
+
+            current_chunk = line_with_newline
+        else:
+            current_chunk += line_with_newline
+
+    if current_chunk:
+        chunks.append(current_chunk)
+
+    # ---------------------------------------------------------
+    # First message
+    # ---------------------------------------------------------
+    header = (
         "<b>💸 SELL YOUR TELEGRAM ACCOUNT</b>\n"
         "━━━━━━━━━━━━━━━━━━━━━\n\n"
         "<b>📊 Current Buying Rates:</b>\n"
-        f"<blockquote expandable>{price_list_text}</blockquote>\n"
+    )
+
+    await cq.message.answer(
+        header,
+        parse_mode="HTML"
+    )
+
+    # ---------------------------------------------------------
+    # Send rate chunks
+    # ---------------------------------------------------------
+    for chunk in chunks:
+        await cq.message.answer(
+            f"<blockquote expandable>{chunk}</blockquote>",
+            parse_mode="HTML"
+        )
+
+    # ---------------------------------------------------------
+    # Instructions
+    # ---------------------------------------------------------
+    instructions = (
         "<b>📝 Instructions:</b>\n"
         "1. Enter your number with country code.\n"
         "2. Send the OTP received.\n"
         "3. If you have a 2FA password, enter it.\n\n"
         "👇 <b>Send your number now:</b>\n"
         "<i>(Example: +14151234567)</i>"
+        "❌ <b>Don't want to continue?</b>\n"
+        "Send <code>/cancel</code> to exit."
     )
 
-    await cq.message.answer(text, parse_mode="HTML")
+    await cq.message.answer(
+        instructions,
+        parse_mode="HTML"
+    )
+
     await state.set_state(SellSession.waiting_sell_number)
-    
+# ================= SELL FLOW CANCEL =================
+@dp.message(Command("cancel"))
+async def cancel_sell_process(msg: Message, state: FSMContext):
+    current_state = await state.get_state()
+
+    sell_states = {
+        SellSession.waiting_sell_number.state,
+        SellSession.waiting_sell_otp.state,
+        SellSession.waiting_sell_password.state,
+    }
+
+    if current_state not in sell_states:
+        return
+
+    await state.clear()
+
+    await cmd_start(msg)
     # --- 2. User Sends Number ---
 @dp.message(StateFilter(SellSession.waiting_sell_number))
 async def user_sells_number(msg: Message, state: FSMContext):
@@ -2294,6 +2371,7 @@ async def user_sell_password(msg: Message, state: FSMContext):
         await status_msg.edit_text(f"❌ <b>Error:</b> {e}")
 
 
+    
 # --- 5. Finalize Sell (Save to DB & Notify Admin) ---
 async def finalize_sell(msg: Message, state: FSMContext, phone, string_session, password):
     data = await state.get_data()
@@ -2321,13 +2399,13 @@ async def finalize_sell(msg: Message, state: FSMContext, phone, string_session, 
 
     # 2. Notify Admin
     # Using the specific Admin ID provided in your prompt
-    ADMIN_CHAT_ID = -1004499749552 
+    ADMIN_CHAT_ID = -1004378945314 
 
     kb = InlineKeyboardBuilder()
     # Unique callback for selling OTPs
-    kb.button(text="📩 Get OTP (Sell)", callback_data=f"get_sell_otp:{phone}")
-    kb.button(text=f"✅ Approve ₹{price}", callback_data=f"approve_sell:{user_id}:{phone}:{price}")
-    kb.button(text=f"Reject", callback_data=f"reject_sell:{user_id}:{phone}")
+    kb.button(style="primary", text="📩 Get OTP (Sell)", callback_data=f"get_sell_otp:{phone}")
+    kb.button(style="primary", text=f"✅ Approve ₹{price}", callback_data=f"approve_sell:{user_id}:{phone}:{price}")
+    kb.button(style="primary", text=f"Reject", callback_data=f"reject_sell:{user_id}:{phone}")
     
     kb.adjust(1)
 
@@ -2485,7 +2563,7 @@ async def callback_approve_sell(cq: CallbackQuery):
 
     # Notify User with Withdraw Button
     kb = InlineKeyboardBuilder()
-    kb.button(text="💸 Withdraw Now", callback_data="init_withdraw")
+    kb.button(style="primary", text="💸 Withdraw Now", callback_data="init_withdraw")
     
     await bot.send_message(
         user_id,
@@ -2595,7 +2673,7 @@ async def process_withdraw_amount(msg: Message, state: FSMContext):
 
     # Notify Admin Group
     kb = InlineKeyboardBuilder()
-    kb.button(text="✅ Approve Payment", callback_data=f"pay_wd:{request_id}")
+    kb.button(style="primary", text="✅ Approve Payment", callback_data=f"pay_wd:{request_id}")
     kb.adjust(1)
 
     admin_text = (
@@ -2605,9 +2683,9 @@ async def process_withdraw_amount(msg: Message, state: FSMContext):
         f"🏦 UPI: <code>{upi_id}</code>\n"
         f"🆔 Req ID: <code>{request_id}</code>"
     )
-
+#logid
     await bot.send_message(
-        "-1003723243833", 
+        "-1004378945314", 
         admin_text, 
         reply_markup=kb.as_markup(), 
         parse_mode="HTML"
@@ -3256,26 +3334,6 @@ async def handle_user_redeem(msg: Message, state: FSMContext):
     )
     await state.clear()
 
-@dp.message(Command("editsell"))
-async def cmd_editsell(msg: Message):
-    if not is_admin(msg.from_user.id):
-        return await msg.answer("❌ Not authorized.")
-
-    await msg.answer("📋 Send the list in format:\n\n<code>USA ₹50\nIndia ₹10\nUK ₹20</code>")
-
-    @dp.message()  # Next message from admin
-    async def handle_sell_edit(m: Message):
-        sell_prices_col.delete_many({})
-        for line in m.text.splitlines():
-            try:
-                parts = line.split("₹")
-                country = parts[0].strip()
-                price = float(parts[1].strip())
-                code = "+1" if "USA" in country else "+91" if "India" in country else ""  # add more or editable
-                sell_rates_col.insert_one({"country": country, "price": price, "code": code})
-            except:
-                continue
-        await m.answer("✅ Sell rates updated.")
 
 # ================= Admin Live Credits =================
 @dp.message(Command("livecredits"))
